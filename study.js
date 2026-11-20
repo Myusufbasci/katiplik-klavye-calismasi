@@ -108,10 +108,15 @@ function showBenchmarkSetup(track, daily = null) {
   studyElement('benchmarkManual').hidden = Boolean(daily);
   studyElement('benchmarkTrack').value = track;
   studyElement('benchmarkTitle').textContent = fluent ? 'Süresiz akıcı yazım' : '3 dakikalık klavye denemesi';
-  studyElement('benchmarkInstructions').textContent = fluent
-    ? 'Metin tamamlanınca tur biter.'
-    : 'Metin açıldığında süre başlar. Küçük harf kullan, noktalama ekleme ve kelimeler arasında tek boşluk bırak. Sonucu tur bitince göreceksin.';
-  studyElement('startBenchmark').textContent = daily && !fluent ? 'Denemeyi başlat' : 'Metni aç';
+  studyElement('startBenchmark').textContent = daily ? 'Denemeyi başlat' : 'Metni aç';
+  if (fluent) {
+    revealTrial();
+    if (!dialog.open) {
+      dialog.showModal();
+      studyElement('benchmarkInput').focus();
+    }
+    return;
+  }
   updateBenchmarkSetup();
   if (!dialog.open) {
     pausedPractice = !daily && state.isStarted;
