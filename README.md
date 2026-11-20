@@ -16,7 +16,7 @@ Zabıt ve icra kâtipliği uygulama sınavlarına hazırlanmak için tarayıcıd
 - Isınma ve akıcı yazım, metnin son kelimesine kadar süresiz devam eder.
 - Akıcı yazım tam sayfada, sınavdaki gibi süresiz devam eder. Yazarken tuş sesi, kelime işareti veya hata uyarısı çıkmaz. Metin tamamlanınca hatalar gösterilir.
 - Normal ve sınav oturumları aynı metin sırasını kullanır. Varsayılan olarak **7 oturumda bir** sınav yapılır. İlk 30 sınavda 30 farklı metin gelir.
-- Bir kelimeyi oturumda ilk kez yanlış yazdığında tekrar sayısına 3 eklenir. Sonraki oturumda toplam 1 azalır. Alıştırma aynı kelimenin arasına mümkün olduğunca farklı kelimeler koyar.
+- Hatalı kelimeleri üç oturumda 3, 2 ve 1 kez yazarsın. Aynı kelime başka bir oturumda tekrar yanlış yazılırsa sıra yeniden 3’ten başlar. Alıştırma aynı kelimenin arasına mümkün olduğunca farklı kelimeler koyar.
 - İlerleme tarayıcıda saklanır. Ara verdiğinde kaldığın oturumdan devam edebilir, oturumu tamamlayınca aynı gün sıradaki oturuma geçebilirsin. **İlerleme** ekranında 15 oturumluk döngülerin en iyi deneme sonuçlarını görebilirsin.
 - **Araçlar** bölümünde süreli ve süresiz serbest çalışma, özel metin ekleme ve Türkçe Q klavye alıştırmaları bulunur.
 

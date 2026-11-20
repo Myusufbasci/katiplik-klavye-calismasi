@@ -39,14 +39,14 @@ function priorWordCounts(session) {
   }
   return new Map(previous.wordReview.items
     .filter(item => !item.starter && item.count > 1)
-    .map(item => [item.word, item.count - 1]));
+    .map(item => [item.word, Math.min(item.count - 1, repetitionsPerMistake)]));
 }
 
 function wordReviewItems(session) {
   if (session.wordReview) return session.wordReview.items;
   const counts = priorWordCounts(session);
   for (const word of reviewErrorWords(session.reviewErrors ?? session.errors)) {
-    counts.set(word, (counts.get(word) || 0) + repetitionsPerMistake);
+    counts.set(word, repetitionsPerMistake);
   }
   if (counts.size) return [...counts].map(([word, count]) => ({ word, count }));
   return reviewErrorWords(passageFor(session).content.split(' ').filter(word => word.length >= 5))
@@ -66,6 +66,25 @@ function interleaveReviewWords(items, previousWord) {
     if (!item.count) pending.splice(index, 1);
   }
   return words;
+}
+
+function shortenSavedWordReview(review) {
+  const oldOrder = review.order ?? interleaveReviewWords(review.items);
+  for (const item of review.items) {
+    item.count = Math.min(item.count, repetitionsPerMistake);
+  }
+  const remaining = new Map(review.items.map(({ word, count }) => [word, count]));
+  const completed = [];
+  for (const word of oldOrder.slice(0, review.completed)) {
+    const count = remaining.get(word);
+    if (count > 0) {
+      completed.push(word);
+      remaining.set(word, count - 1);
+    }
+  }
+  const pending = [...remaining].filter(([, count]) => count > 0).map(([word, count]) => ({ word, count }));
+  review.completed = completed.length;
+  review.order = [...completed, ...interleaveReviewWords(pending, completed.at(-1))];
 }
 
 function cycleForSession(number) {
@@ -156,6 +175,10 @@ function prepareSavedSession(session) {
       session.compactFlow = true;
     }
   }
+  if (session.finishedOn === null && getSteps(session)[session.completed]?.kind === 'words' &&
+      session.wordReview?.items.some(item => item.count > repetitionsPerMistake)) {
+    shortenSavedWordReview(session.wordReview);
+  }
   return session;
 }
 
@@ -215,7 +238,11 @@ function registerReviewError(marker, word, index) {
   session.reviewErrors = [...errors, word];
   session.errors = [word, ...session.errors].slice(0, 120);
 
-  item.count = item.starter ? repetitionsPerMistake : item.count + repetitionsPerMistake;
+  if (item.count === repetitionsPerMistake && !item.starter) {
+    saveStudy();
+    return null;
+  }
+  item.count = repetitionsPerMistake;
   delete item.starter;
   const prefix = review.order.slice(0, index + 1);
   const used = new Map();
