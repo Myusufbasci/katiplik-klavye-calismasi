@@ -1,6 +1,7 @@
 const sessionsPerCycle = 15;
 const sessionsBetweenTrials = 7;
 const repetitionsPerMistake = 3;
+const reviewOrderVersion = 1;
 const firstCycleGoal = 90;
 const baselineScore = 70;
 const officialPools = OFFICIAL_EXAM_PASSAGES;
@@ -53,22 +54,44 @@ function wordReviewItems(session) {
     .slice(0, 4).map(word => ({ word, count: 2, starter: true }));
 }
 
-function interleaveReviewWords(items, previousWord) {
-  const pending = items.map(item => ({ ...item }));
+function interleaveReviewWords(items, prefix = []) {
+  if (!items.length) return [];
+  const total = items.reduce((sum, item) => sum + item.count, 0);
+  const gap = Math.max(2, Math.floor(total / (2 * Math.max(...items.map(item => item.count)))));
+  const lastSeen = new Map(prefix.map((word, index) => [word, index - prefix.length]));
+  const lastPosition = item => lastSeen.get(item.word) ?? -Infinity;
+  // Her kelimenin tekrarlarını kalan listenin uzunluğuna göre arala.
+  const pending = items.map(({ word, count }, index) => {
+    const spacing = total / count;
+    return { word, count, spacing, next: spacing * index / items.length };
+  });
   const words = [];
   while (pending.length) {
-    pending.sort((left, right) => right.count - left.count);
-    const different = pending.findIndex(item => item.word !== (words.at(-1) ?? previousWord));
-    const index = Math.max(0, different);
+    pending.sort((left, right) => left.next - right.next);
+    const position = words.length;
+    const spacedIndex = pending.findIndex(item => position - lastPosition(item) >= gap);
+    const index = spacedIndex >= 0 ? spacedIndex : pending.reduce((oldest, item, candidate) =>
+      lastPosition(item) < lastPosition(pending[oldest]) ? candidate : oldest, 0);
     const item = pending[index];
     words.push(item.word);
+    lastSeen.set(item.word, position);
+    item.next += item.spacing;
     item.count--;
     if (!item.count) pending.splice(index, 1);
   }
   return words;
 }
 
-function shortenSavedWordReview(review) {
+function arrangeReviewSuffix(review, prefix) {
+  const used = new Map();
+  for (const word of prefix) used.set(word, (used.get(word) || 0) + 1);
+  const pending = review.items.map(({ word, count }) => ({ word, count: count - (used.get(word) || 0) }))
+    .filter(item => item.count > 0);
+  review.order = [...prefix, ...interleaveReviewWords(pending, prefix)];
+  review.orderVersion = reviewOrderVersion;
+}
+
+function updateSavedWordReview(review) {
   const oldOrder = review.order ?? interleaveReviewWords(review.items);
   for (const item of review.items) {
     item.count = Math.min(item.count, repetitionsPerMistake);
@@ -82,9 +105,8 @@ function shortenSavedWordReview(review) {
       remaining.set(word, count - 1);
     }
   }
-  const pending = [...remaining].filter(([, count]) => count > 0).map(([word, count]) => ({ word, count }));
   review.completed = completed.length;
-  review.order = [...completed, ...interleaveReviewWords(pending, completed.at(-1))];
+  arrangeReviewSuffix(review, completed);
 }
 
 function cycleForSession(number) {
@@ -175,9 +197,9 @@ function prepareSavedSession(session) {
       session.compactFlow = true;
     }
   }
-  if (session.finishedOn === null && getSteps(session)[session.completed]?.kind === 'words' &&
-      session.wordReview?.items.some(item => item.count > repetitionsPerMistake)) {
-    shortenSavedWordReview(session.wordReview);
+  if (session.wordReview && session.wordReview.orderVersion !== reviewOrderVersion &&
+      session.finishedOn === null && getSteps(session)[session.completed]?.kind === 'words') {
+    updateSavedWordReview(session.wordReview);
   }
   return session;
 }
@@ -244,12 +266,7 @@ function registerReviewError(marker, word, index) {
   }
   item.count = repetitionsPerMistake;
   delete item.starter;
-  const prefix = review.order.slice(0, index + 1);
-  const used = new Map();
-  for (const entry of prefix) used.set(entry, (used.get(entry) || 0) + 1);
-  const rest = review.items.map(entry => ({ word: entry.word, count: entry.count - (used.get(entry.word) || 0) }))
-    .filter(entry => entry.count > 0);
-  review.order = [...prefix, ...interleaveReviewWords(rest, word)];
+  arrangeReviewSuffix(review, review.order.slice(0, index + 1));
   saveStudy();
   return review.order;
 }
@@ -320,7 +337,7 @@ function launchDailyStep() {
   rememberPassage(passage.id);
   if (step.kind === 'words') {
     session.wordReview ??= { items: wordReviewItems(session), completed: 0 };
-    session.wordReview.order ??= interleaveReviewWords(session.wordReview.items);
+    if (!session.wordReview.order) arrangeReviewSuffix(session.wordReview, []);
     const words = session.wordReview.order;
     const resumeAt = Math.min(session.wordReview.completed, words.length);
     saveStudy();
