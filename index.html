@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zabıt ve İcra Kâtipliği Klavye Çalışması</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="workspace.css">
+</head>
+<body>
+
+  <main class="main-app-container">
+    <header class="site-header">
+      <button id="homeBrand" type="button" class="site-brand" aria-label="Kâtiplik Çalışması, bugün">
+        <span class="brand-icon" aria-hidden="true">K</span><span>Kâtiplik Çalışması</span>
+      </button>
+      <nav class="site-nav" aria-label="Bölümler">
+        <button id="showToday" type="button" aria-current="page">Bugün</button>
+        <button id="showProgress" type="button">İlerleme</button>
+        <button id="showTools" type="button">Araçlar</button>
+      </nav>
+    </header>
+
+    <section id="todayView" class="today-layout" aria-labelledby="todayHeadline">
+      <div class="daily-main">
+        <div class="daily-hero">
+          <p id="todayDate" class="date-line"></p>
+          <h1 id="todayHeadline" tabindex="-1">Bugünün çalışması</h1>
+          <p id="todayIntro" class="today-intro"></p>
+          <div class="daily-action-line">
+            <button id="startDailyStep" type="button" class="action-button"></button>
+            <button id="nextDailySession" type="button" class="action-button" hidden>Sonraki güne geç</button>
+            <span id="todayTime"></span>
+          </div>
+        </div>
+        <section class="session-card" aria-labelledby="sessionHeading">
+          <div class="session-heading">
+            <h2 id="sessionHeading">Oturum adımları</h2>
+            <span id="todayCount"></span>
+          </div>
+          <ol id="todaySteps" class="session-steps"></ol>
+        </section>
+      </div>
+      <aside class="daily-sidebar" aria-label="Metin ve döngü">
+        <section class="passage-card">
+          <p class="card-eyebrow">Günün metni</p>
+          <h2 id="todayPassage"></h2>
+          <p id="todayPassageNote"></p>
+          <div id="todayFocus" class="focus-section" hidden>
+            <h3 id="todayFocusTitle"></h3>
+            <ul id="todayFocusWords" class="word-chips"></ul>
+          </div>
+        </section>
+        <section class="cycle-card" aria-labelledby="cycleHeading">
+          <div class="cycle-heading">
+            <h2 id="cycleHeading">Döngü</h2>
+            <span id="cycleSessions"></span>
+          </div>
+          <progress id="cycleBar" max="15" value="0" aria-label="Döngüde tamamlanan oturumlar"></progress>
+          <button id="openProgress" type="button" class="text-button">Döngü geçmişi <span aria-hidden="true">→</span></button>
+        </section>
+      </aside>
+    </section>
+
+    <section id="progressView" class="progress-view" aria-labelledby="progressHeadline" hidden>
+      <div class="view-heading">
+        <h1 id="progressHeadline" tabindex="-1">İlerleme</h1>
+        <p>Başlangıç 70 · Kişisel hedef 120+ net / 3 dk</p>
+      </div>
+      <section class="progress-card" aria-labelledby="cycleHistoryHeading">
+        <h2 id="cycleHistoryHeading">Döngüler</h2>
+        <p id="goalExplanation"></p>
+        <ol id="cycleHistory" class="cycle-history"></ol>
+      </section>
+      <section class="progress-card" aria-labelledby="recentHeading">
+        <h2 id="recentHeading">Son denemeler</h2>
+        <p id="studyProgress"></p>
+        <ul id="studyHistory" class="study-history"></ul>
+      </section>
+      <footer class="study-source-links">
+        <a href="https://pgm.adalet.gov.tr/Home/SayfaDetay/sozlesmeli-zabit-katibi-uygulamali-sinav-metinleri-ve-degerlendirme-kriterleri13072026120135" target="_blank" rel="noopener">Resmî zabıt metinleri ve kriterleri</a>
+        <a href="https://iidb.adalet.gov.tr/Home/SayfaDetay/sozlesmeli-icra-k-tipligi-uygulamali-sinav-metinleri-ve-degerlendirme-kriterleri14072026104802" target="_blank" rel="noopener">Resmî icra metinleri ve kriterleri</a>
+      </footer>
+    </section>
+
+    <section id="practiceWorkspace" class="practice-workspace" aria-labelledby="workspaceHeading" hidden>
+      <div id="workspaceHeader" class="workspace-heading">
+        <div>
+          <p id="workspaceContext" class="date-line"></p>
+          <h1 id="workspaceHeading" tabindex="-1">Serbest çalışma</h1>
+          <p id="drillLabel"></p>
+        </div>
+        <div class="workspace-actions">
+          <output id="wordReviewProgress" class="word-review-progress" aria-live="polite" hidden></output>
+          <div id="timerBadge" class="timer-box">
+            <span id="timerDisplay">00:00</span>
+          </div>
+          <button id="exitDrill" class="clean-btn" type="button" hidden>Bugüne dön</button>
+          <button id="openBenchmark" class="clean-btn" type="button" aria-haspopup="dialog">3 dk deneme</button>
+        </div>
+      </div>
+
+      <div id="practiceToolbar" class="clean-top-bar">
+        <div class="top-bar-left">
+          <select id="textSelect" class="clean-text-select" title="Çalışmak istediğiniz metni seçin"></select>
+          <button id="randomTextBtn" class="clean-btn" title="Rastgele sınav metni">Kura çek</button>
+          <button id="customTextBtn" class="clean-btn" title="Kendi metnini ekle">Metin ekle</button>
+        </div>
+
+        <div class="top-bar-center">
+          <select id="durationSelect" class="clean-mode-select" title="Çalışma Modu">
+            <option value="0" selected>Süresiz pratik</option>
+            <option value="180">3 dk rehberli pratik</option>
+            <option value="120">2 dk akıcı yazım</option>
+            <option value="60">1 dk pratik</option>
+            <option value="30">30 sn tempo turu</option>
+          </select>
+          <div class="progress-pill">
+            <span id="wordProgressText">0 / 0 Kelime (%0)</span>
+          </div>
+        </div>
+
+        <div class="top-bar-right">
+          <button id="dailyLettersBtn" type="button" class="clean-btn" aria-haspopup="dialog">Harf Turu</button>
+          <button id="letterPositionsBtn" type="button" class="clean-btn" aria-haspopup="dialog">Harf Yerleri</button>
+          <button id="hideInputToggleBtn" class="clean-btn" title="Yazdıklarınızı kapatır, gözleriniz sadece metinde kalır">👁️ Yazılanı Gizle</button>
+          <button id="restartBtn" class="clean-reload-btn" title="Baştan Başlat">↻</button>
+          <button id="soundToggleBtn" class="clean-btn icon-only active" title="Ses Açık/Kapalı">🔊</button>
+          <button id="fontDecBtn" class="clean-btn icon-only" title="Yazıyı Küçült">A-</button>
+          <button id="fontIncBtn" class="clean-btn icon-only" title="Yazıyı Büyüt">A+</button>
+        </div>
+      </div>
+
+      <div id="typingTextCard" class="typing-text-card">
+        <div id="textDisplay" class="text-display"></div>
+      </div>
+
+      <div id="inputSection" class="input-section">
+        <input
+          type="text"
+          id="wordInput"
+          class="word-input"
+          placeholder="Yazmaya başladığınız an sayaç başlayacaktır..."
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+        />
+      </div>
+
+      <div class="stats-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card correct">
+            <div class="stat-label">Doğru Kelime</div>
+            <div id="liveCorrect" class="stat-value">0</div>
+          </div>
+
+          <div class="stat-card wrong">
+            <div class="stat-label">Yanlış Kelime</div>
+            <div id="liveWrong" class="stat-value">0</div>
+          </div>
+
+          <div class="stat-card net secondary-stat">
+            <div class="stat-label">Yazılan Kelime</div>
+            <div id="liveTotal" class="stat-value">0</div>
+          </div>
+
+          <div class="stat-card secondary-stat">
+            <div class="stat-label">Kelime / dakika</div>
+            <div id="liveWpm" class="stat-value">0</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-label">Doğruluk</div>
+            <div id="liveAccuracy" class="stat-value">100%</div>
+          </div>
+
+          <div class="stat-card secondary-stat">
+            <div class="stat-label">Tuş vuruşu</div>
+            <div id="liveKeystrokes" class="stat-value">0</div>
+          </div>
+        </div>
+
+        <div class="target-progress-container">
+          <div class="progress-header">
+            <span id="progressTitle">Metin İlerleme Durumu</span>
+            <span id="targetStatusBadge" class="status-badge in-progress">Başlanmadı</span>
+          </div>
+          <div class="progress-track">
+            <div id="progressBar" class="progress-fill"></div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <dialog id="resultModal" class="study-dialog result-dialog" aria-labelledby="modalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">Alıştırma sonucu</h2>
+        <button id="closeResultBtn" class="close-modal-btn" aria-label="Sonucu kapat">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div id="resultStatusContainer"></div>
+
+        <table class="result-table">
+          <tbody>
+            <tr class="practice-pace-stat">
+              <td>Çalışma Modu / Süre</td>
+              <td id="modalDurationInfo">Süresiz (Metin Bitene Kadar)</td>
+            </tr>
+            <tr>
+              <td>Toplam Yazılan Kelime</td>
+              <td id="modalTotalWords">0</td>
+            </tr>
+            <tr>
+              <td>Doğru Kelime Sayısı</td>
+              <td id="modalCorrectWords" style="color:#16a34a;">0</td>
+            </tr>
+            <tr>
+              <td>Yanlış Kelime Sayısı</td>
+              <td id="modalWrongWords" style="color:#dc2626;">0</td>
+            </tr>
+            <tr class="practice-pace-stat">
+              <td>Dakikadaki Kelime Hızı (DKS / WPM)</td>
+              <td id="modalDks">0</td>
+            </tr>
+            <tr>
+              <td>Doğruluk Oranı</td>
+              <td id="modalAccuracy">100%</td>
+            </tr>
+            <tr>
+              <td>Hata Oranı</td>
+              <td id="modalErrorRate">0%</td>
+            </tr>
+            <tr class="practice-pace-stat">
+              <td>Toplam Tuş Vuruşu</td>
+              <td id="modalKeystrokes">0</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer">
+        <button id="restartFromModalBtn" class="btn-secondary">Tekrar yaz</button>
+        <button id="nextTextFromModalBtn" class="btn-primary">Sonraki metne geç</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="customTextModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Özel Çalışma Metni Ekle</h2>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="customTextTitle">Metin Başlığı</label>
+          <input type="text" id="customTextTitle" class="form-control" placeholder="Örn: 2026 Zabıt Katipliği Metni">
+        </div>
+        <div class="form-group">
+          <label for="customTextContent">Metin İçeriği (Paragraf)</label>
+          <textarea id="customTextContent" class="form-control" placeholder="Çalışmak istediğiniz zabıt katipliği metnini buraya yapıştırın..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelCustomTextBtn" class="btn-secondary">İptal</button>
+        <button id="saveCustomTextBtn" class="btn-primary">Kaydet ve Başla</button>
+      </div>
+    </div>
+  </div>
+
+  <dialog id="dailyLettersDialog" class="modal-content daily-letters-dialog keyboard-practice-dialog" aria-labelledby="dailyLettersTitle">
+    <div class="modal-header">
+      <h2 id="dailyLettersTitle">Kör Klavye Alıştırması</h2>
+      <form method="dialog">
+        <button id="closeDailyLettersBtn" class="close-modal-btn" aria-label="Alıştırmayı kapat">✕</button>
+      </form>
+    </div>
+    <div class="modal-body">
+      <div id="dailyLettersPractice" class="daily-letters-practice">
+        <p id="dailyLettersProgress"></p>
+        <label for="dailyLetterInput">Klavyeye bakmadan gösterilen harfin tuşuna bas.</label>
+        <div aria-live="polite" aria-atomic="true">
+          <p id="dailyLetterTarget" class="daily-letter-target"></p>
+          <p id="dailyLetterHint" class="daily-letter-hint"></p>
+        </div>
+        <input id="dailyLetterInput" class="form-control" type="text" placeholder="Hedef harfi yaz"
+          autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" autofocus>
+        <p id="dailyLetterFeedback" class="daily-letter-feedback" role="status"></p>
+        <div class="letter-keyboard-scroll" aria-hidden="true">
+          <div id="dailyLetterKeyboard" class="letter-keyboard"></div>
+        </div>
+      </div>
+      <div id="dailyLettersResults" hidden>
+        <p id="dailyLettersSummary" class="daily-letters-summary"></p>
+        <div class="daily-letters-breakdown">
+          <section aria-labelledby="dailyErrorsTitle">
+            <h3 id="dailyErrorsTitle">Bu turdaki hatalar</h3>
+            <ul id="dailyLetterErrors"></ul>
+          </section>
+          <section aria-labelledby="frequentErrorsTitle">
+            <h3 id="frequentErrorsTitle">Tüm turlarda en çok hata yaptığın harfler</h3>
+            <ul id="frequentLetterErrors"></ul>
+            <button id="resetLetterHistoryBtn" type="button" class="clean-btn daily-reset-history">Geçmişi Sıfırla</button>
+            <p id="resetLetterHistoryStatus" role="status"></p>
+          </section>
+        </div>
+        <button id="restartDailyLetters" type="button" class="btn-primary practice-restart">Yeni Tur</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="letterPositionsDialog" class="modal-content daily-letters-dialog keyboard-practice-dialog" aria-labelledby="letterPositionsTitle">
+    <div class="modal-header">
+      <h2 id="letterPositionsTitle">Harf Yerleri</h2>
+      <form method="dialog">
+        <button class="close-modal-btn" aria-label="Alıştırmayı kapat">✕</button>
+      </form>
+    </div>
+    <div class="modal-body">
+      <div id="letterPositionsPractice">
+        <div class="letter-position-question">
+          <p>Gösterilen harfin yerini klavyede işaretle.</p>
+          <div class="letter-position-prompt" aria-live="polite" aria-atomic="true">
+            <p id="letterPositionTarget" class="letter-position-target"></p>
+            <div>
+              <p id="letterPositionName"></p>
+              <p id="letterPositionProgress" class="letter-position-progress"></p>
+            </div>
+          </div>
+        </div>
+        <div class="letter-keyboard-scroll">
+          <div id="letterKeyboard" class="letter-keyboard" role="group" aria-label="Türkçe Q klavye"></div>
+        </div>
+        <p id="letterPositionFeedback" class="daily-letter-feedback" role="status"></p>
+      </div>
+      <div id="letterPositionResults" hidden>
+        <p id="letterPositionSummary" class="daily-letters-summary"></p>
+        <div class="daily-letters-breakdown">
+          <section aria-labelledby="letterPositionErrorsTitle">
+            <h3 id="letterPositionErrorsTitle">Bu turdaki hatalar</h3>
+            <ul id="letterPositionErrors"></ul>
+          </section>
+          <section aria-labelledby="letterPositionHistoryTitle">
+            <h3 id="letterPositionHistoryTitle">Tüm turlarda en çok hata yaptığın harfler</h3>
+            <ul id="letterPositionHistory"></ul>
+            <button id="resetLetterPositionHistory" type="button" class="clean-btn daily-reset-history">Geçmişi Sıfırla</button>
+            <p id="letterPositionHistoryStatus" role="status"></p>
+          </section>
+        </div>
+        <button id="restartLetterPositions" type="button" class="btn-primary practice-restart">Yeni Tur</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="benchmarkDialog" class="modal-content benchmark-dialog study-dialog" aria-labelledby="benchmarkTitle">
+    <div class="modal-header">
+      <h2 id="benchmarkTitle">3 dakikalık klavye denemesi</h2>
+      <form method="dialog"><button class="close-modal-btn" aria-label="Denemeyi kapat">✕</button></form>
+    </div>
+    <div class="modal-body study-body">
+      <section id="benchmarkSetup">
+        <div id="benchmarkManual">
+        <label for="benchmarkTrack">Metin grubu</label>
+        <select id="benchmarkTrack" class="form-control">
+          <option value="zabit">Zabıt kâtipliği</option>
+          <option value="icra">İcra kâtipliği</option>
+          <option value="custom">Eklediğim metinler</option>
+        </select>
+        </div>
+        <p>Metin açıldığında süre başlar. Küçük harf kullan, noktalama ekleme ve kelimeler arasında tek boşluk bırak. Sonucu tur bitince göreceksin.</p>
+        <p id="benchmarkSetupStatus" role="status"></p>
+        <button id="startBenchmark" class="btn-primary" type="button">Metni aç</button>
+      </section>
+      <section id="benchmarkRun" hidden>
+        <div class="benchmark-run-header">
+          <h3 id="benchmarkTextTitle"></h3>
+          <output id="benchmarkTimer" class="timer-box" aria-label="Kalan süre">3:00</output>
+        </div>
+        <p id="benchmarkPassage" class="benchmark-passage" tabindex="0" aria-label="Deneme metni"></p>
+        <label for="benchmarkInput">Metni buraya yaz</label>
+        <textarea id="benchmarkInput" class="form-control benchmark-input" autocomplete="off" autocorrect="off"
+          autocapitalize="off" spellcheck="false" maxlength="12000"></textarea>
+      </section>
+      <section id="benchmarkResult" hidden aria-labelledby="benchmarkResultTitle">
+        <h3 id="benchmarkResultTitle" tabindex="-1">Deneme sonucu</h3>
+        <dl id="benchmarkMetrics" class="benchmark-metrics"></dl>
+        <p id="benchmarkStatus"></p>
+        <div id="benchmarkMistakes" hidden>
+          <h4>Tekrar edilecek kelimeler</h4>
+          <ul id="benchmarkMistakeList"></ul>
+        </div>
+        <p class="study-note">Puan, yayımlanan 2026 kriterlerine göre bu uygulamanın tahminidir. Birden fazla hatanın birleştiği durumlarda puanlama farklılık gösterebilir.</p>
+        <div class="study-actions">
+          <button id="benchmarkNext" class="btn-secondary" type="button">Yeni metin seç</button>
+          <button id="benchmarkPractice" class="btn-primary" type="button">Zor kelimeleri çalış</button>
+        </div>
+      </section>
+    </div>
+  </dialog>
+
+  <script src="official-texts.js"></script>
+  <script src="texts.js"></script>
+  <script src="keyboard.js"></script>
+  <script src="daily-letters.js"></script>
+  <script src="letter-positions.js"></script>
+  <script src="app.js"></script>
+  <script src="exam-scoring.js"></script>
+  <script src="study.js"></script>
+  <script src="daily-plan.js"></script>
+</body>
+</html>
