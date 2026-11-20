@@ -2,6 +2,10 @@
 
 Zabıt ve icra kâtipliği uygulama sınavlarına hazırlanmak için tarayıcıda çalışan bir klavye uygulaması. Resmî metinlerle ısınabilir, üç dakikalık denemeler yapabilir ve sık takıldığın kelimeleri kendi hızında tekrar edebilirsin.
 
+![Günlük çalışma ekranında sıradaki adım, seçilen metin ve kelime tekrarları](gorseller/gunluk-calisma.webp)
+
+*Örnek bir günlük oturum.*
+
 ## Çalışma düzeni
 
 | Oturum | Adımlar |
@@ -14,6 +18,12 @@ Zabıt ve icra kâtipliği uygulama sınavlarına hazırlanmak için tarayıcıd
 - Bir kelimeyi oturumda ilk kez yanlış yazdığında tekrar sayısına 5 eklenir. Sonraki oturumda toplam 1 azalır. Alıştırma aynı kelimenin arasına mümkün olduğunca farklı kelimeler koyar.
 - İlerleme tarayıcıda saklanır. Ara verdiğinde kaldığın oturumdan devam edebilir, oturumu tamamlayınca aynı gün sıradaki oturuma geçebilirsin. **İlerleme** ekranında 15 oturumluk döngülerin en iyi deneme sonuçlarını görebilirsin.
 - **Araçlar** bölümünde süreli ve süresiz serbest çalışma, özel metin ekleme ve Türkçe Q klavye alıştırmaları bulunur.
+
+## İlerleme ekranı
+
+![İlerleme ekranında döngü hedefleri, en iyi sonuçlar ve son denemeler](gorseller/ilerleme.webp)
+
+*Örnek deneme sonuçları ve döngü hedefleri.*
 
 ## Kurulum
 
