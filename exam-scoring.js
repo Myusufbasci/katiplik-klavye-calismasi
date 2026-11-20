@@ -65,6 +65,7 @@ function scoreExamCopy(source, input) {
   const finalMerge = j === target.length - 1 && path[finalCell] % 8 === operations.merge &&
     cost[finalCell] === cost[lastRow + j] && typed.at(-1) === target.at(-2) + target.at(-1);
   const reachedEnd = finalMerge || (j === target.length && path[finalCell] % 8 !== operations.unfinished);
+  const alignedWords = finalMerge ? target.length : j;
   let i = typed.length;
   let correct = 0;
   let skipped = 0;
@@ -108,6 +109,7 @@ function scoreExamCopy(source, input) {
     skipped,
     extraSpaces,
     reachedEnd,
+    alignedWords,
     accuracy: assessed ? correct / assessed : 0,
     errorRate: assessed ? wrong / assessed : 0,
     mistakes: mistakes.reverse()

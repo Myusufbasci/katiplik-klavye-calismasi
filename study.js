@@ -109,12 +109,12 @@ function showBenchmarkSetup(track, daily = null) {
   studyElement('benchmarkTrack').value = track;
   studyElement('benchmarkTitle').textContent = fluent ? 'Süresiz akıcı yazım' : '3 dakikalık klavye denemesi';
   studyElement('startBenchmark').textContent = daily ? 'Denemeyi başlat' : 'Metni aç';
+  const host = studyElement(fluent ? 'fluentContent' : 'benchmarkBody');
+  host.append(studyElement('benchmarkRun'), studyElement('benchmarkResult'));
   if (fluent) {
+    studyElement('fluentBack').hidden = false;
+    showPlanView('fluent', false);
     revealTrial();
-    if (!dialog.open) {
-      dialog.showModal();
-      studyElement('benchmarkInput').focus();
-    }
     return;
   }
   updateBenchmarkSetup();
@@ -146,7 +146,7 @@ function revealTrial() {
   const words = passage.content.split(' ');
   benchmark = { ...passage, track, daily: plannedBenchmark,
     startedAt: fluent ? null : performance.now(), lastInput: '', typedCount: 0,
-    lastTargetWord: words.at(-1) };
+    lastTargetWord: words.at(-1), sourcePosition: 0 };
   rememberPassage(passage.id);
   studyElement('benchmarkSetup').hidden = true;
   studyElement('benchmarkRun').hidden = false;
@@ -184,31 +184,43 @@ function onBenchmarkInput(event) {
   }
   benchmark.lastInput = event.target.value;
   const typedCount = (benchmark.lastInput.trimStart().match(/\s+/g) || []).length;
-  if (benchmark.startedAt === null && !event.isComposing) {
-    const score = fluentCompletionScore(benchmark);
-    if (score) {
+  if (benchmark.startedAt === null) {
+    if (event.isComposing) return;
+    const score = fluentBoundaryScore(benchmark);
+    if (score?.reachedEnd) {
       finishBenchmark(score);
       return;
     }
-  }
-  if (typedCount > benchmark.typedCount) {
-    const source = studyElement('benchmarkPassage');
-    const upcoming = source.children[typedCount];
-    if (upcoming) {
-      const offset = upcoming.getBoundingClientRect().top - source.getBoundingClientRect().top;
-      if (offset > source.clientHeight * 0.7) source.scrollTop += offset - source.clientHeight * 0.3;
+    if (score && score.alignedWords > benchmark.sourcePosition) {
+      benchmark.sourcePosition = score.alignedWords;
+      scrollBenchmarkPassage(score.alignedWords);
     }
+    return;
   }
+  if (typedCount > benchmark.typedCount) scrollBenchmarkPassage(typedCount);
   benchmark.typedCount = typedCount;
 }
 
-function fluentCompletionScore(run) {
+function scrollBenchmarkPassage(position) {
+  const source = studyElement('benchmarkPassage');
+  const upcoming = source.children[position];
+  if (!upcoming) return;
+  const offset = upcoming.getBoundingClientRect().top - source.getBoundingClientRect().top;
+  if (offset > source.clientHeight * 0.7) source.scrollTop += offset - source.clientHeight * 0.3;
+}
+
+function fluentBoundaryScore(run) {
   const lastWord = run.lastInput.trimEnd().match(/\S+$/)?.[0];
   const matchesLastWord = lastWord?.normalize('NFC').toLocaleLowerCase('tr-TR') === run.lastTargetWord;
   if (!lastWord || (!matchesLastWord && !/\s$/.test(run.lastInput))) return null;
 
-  const score = scoreExamCopy(run.content, run.lastInput);
-  return score.reachedEnd ? score : null;
+  return scoreExamCopy(run.content, run.lastInput);
+}
+
+function leaveFluentWriting() {
+  if (plannedBenchmark?.kind !== 'fluent') return;
+  benchmark = null;
+  plannedBenchmark = null;
 }
 
 function finishBenchmark(completedScore = null) {
@@ -238,6 +250,7 @@ function renderBenchmarkResult(score, daily) {
   studyElement('benchmarkRun').hidden = true;
   studyElement('benchmarkResult').hidden = false;
   studyElement('benchmarkResultTitle').textContent = fluent ? 'Akıcı yazım sonucu' : 'Deneme sonucu';
+  if (fluent) studyElement('fluentBack').hidden = true;
   studyElement('benchmarkResultNote').hidden = fluent;
   const mistakes = score.mistakes.filter(mistake => mistake.expected).slice(0, 8);
   const scores = [
@@ -281,12 +294,13 @@ function trialStatus(score) {
 
 function setupBenchmark() {
   const dialog = studyElement('benchmarkDialog');
+  studyElement('fluentBack').addEventListener('click', () => showPlanView('today'));
   studyElement('openBenchmark').addEventListener('click', () => showBenchmarkSetup('zabit'));
   studyElement('startBenchmark').addEventListener('click', revealTrial);
   studyElement('benchmarkTrack').addEventListener('change', updateBenchmarkSetup);
   studyElement('benchmarkNext').addEventListener('click', () => {
     if (plannedBenchmark) {
-      dialog.close();
+      if (dialog.open) dialog.close();
       showPlanView('today');
       return;
     }

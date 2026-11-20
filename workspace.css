@@ -28,6 +28,20 @@ body {
   max-width: 1080px;
 }
 
+.main-app-container:has(#fluentWorkspace:not([hidden])) {
+  max-width: none;
+}
+
+#fluentWorkspace .benchmark-passage {
+  max-height: 42vh;
+  font: 1.18rem / 1.6 Georgia, serif;
+}
+
+#fluentWorkspace .benchmark-input {
+  height: 26vh;
+  min-height: 100px;
+}
+
 button, input, select, textarea {
   font-family: inherit;
 }

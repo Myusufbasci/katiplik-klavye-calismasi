@@ -1,5 +1,6 @@
 const sessionsPerCycle = 15;
 const sessionsBetweenTrials = 7;
+const repetitionsPerMistake = 3;
 const firstCycleGoal = 90;
 const baselineScore = 70;
 const officialPools = OFFICIAL_EXAM_PASSAGES;
@@ -33,7 +34,9 @@ function reviewErrorWords(words) {
 function priorWordCounts(session) {
   const previous = studyData.sessions.findLast(item => item.number < session.number);
   if (!previous) return new Map();
-  if (!previous.wordReview) return new Map(reviewErrorWords(previous.errors).map(word => [word, 4]));
+  if (!previous.wordReview) {
+    return new Map(reviewErrorWords(previous.errors).map(word => [word, repetitionsPerMistake - 1]));
+  }
   return new Map(previous.wordReview.items
     .filter(item => !item.starter && item.count > 1)
     .map(item => [item.word, item.count - 1]));
@@ -43,7 +46,7 @@ function wordReviewItems(session) {
   if (session.wordReview) return session.wordReview.items;
   const counts = priorWordCounts(session);
   for (const word of reviewErrorWords(session.reviewErrors ?? session.errors)) {
-    counts.set(word, (counts.get(word) || 0) + 5);
+    counts.set(word, (counts.get(word) || 0) + repetitionsPerMistake);
   }
   if (counts.size) return [...counts].map(([word, count]) => ({ word, count }));
   return reviewErrorWords(passageFor(session).content.split(' ').filter(word => word.length >= 5))
@@ -212,7 +215,7 @@ function registerReviewError(marker, word, index) {
   session.reviewErrors = [...errors, word];
   session.errors = [word, ...session.errors].slice(0, 120);
 
-  item.count = item.starter ? 5 : item.count + 5;
+  item.count = item.starter ? repetitionsPerMistake : item.count + repetitionsPerMistake;
   delete item.starter;
   const prefix = review.order.slice(0, index + 1);
   const used = new Map();
@@ -429,11 +432,13 @@ function setWorkspaceTitle(title, context = '', description = '') {
 }
 
 function showPlanView(view, focus = true) {
+  if (planView === 'fluent' && view !== 'fluent') leaveFluentWriting();
   if (view !== planView && state.isStarted) pauseExam();
   planView = view;
   const free = view === 'tools';
   studyElement('todayView').hidden = view !== 'today';
   studyElement('progressView').hidden = view !== 'progress';
+  studyElement('fluentWorkspace').hidden = view !== 'fluent';
   const workspace = studyElement('practiceWorkspace');
   workspace.hidden = !free && view !== 'drill';
   workspace.classList.toggle('focused-practice', view === 'drill');
@@ -443,7 +448,7 @@ function showPlanView(view, focus = true) {
   studyElement('exitDrill').hidden = view !== 'drill';
   for (const [name, id] of [['today', 'showToday'], ['progress', 'showProgress'], ['tools', 'showTools']]) {
     const button = studyElement(id);
-    if (name === view || (view === 'drill' && name === 'today')) button.setAttribute('aria-current', 'page');
+    if (name === view || (name === 'today' && (view === 'drill' || view === 'fluent'))) button.setAttribute('aria-current', 'page');
     else button.removeAttribute('aria-current');
   }
   if (free) {
@@ -452,7 +457,7 @@ function showPlanView(view, focus = true) {
     else renderExam();
   }
   updatePlanViews();
-  if (focus && view !== 'drill') {
+  if (focus && view !== 'drill' && view !== 'fluent') {
     studyElement(free ? 'workspaceHeading' : view === 'today' ? 'todayHeadline' : 'progressHeadline').focus();
   }
 }
