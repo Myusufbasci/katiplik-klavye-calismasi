@@ -14,7 +14,7 @@ Zabıt ve icra kâtipliği uygulama sınavlarına hazırlanmak için tarayıcıd
 | Sınav | Isınma → Akıcı yazım → Aynı metinle 3 dk sınav → Hatalı kelimeler |
 
 - Isınma ve akıcı yazım, metnin son kelimesine kadar süresiz devam eder.
-- Akıcı yazımda sınav ekranı kullanılır. Yazarken tuş sesi, kelime işareti veya hata uyarısı çıkmaz. Hatalar, **Metni bitirdim** düğmesine basınca gösterilir.
+- Akıcı yazımda sınav ekranı kullanılır. Yazarken tuş sesi, kelime işareti veya hata uyarısı çıkmaz. Metin tamamlanınca hatalar gösterilir.
 - Normal ve sınav oturumları aynı metin sırasını kullanır. Varsayılan olarak **7 oturumda bir** sınav yapılır. İlk 30 sınavda 30 farklı metin gelir.
 - Bir kelimeyi oturumda ilk kez yanlış yazdığında tekrar sayısına 5 eklenir. Sonraki oturumda toplam 1 azalır. Alıştırma aynı kelimenin arasına mümkün olduğunca farklı kelimeler koyar.
 - İlerleme tarayıcıda saklanır. Ara verdiğinde kaldığın oturumdan devam edebilir, oturumu tamamlayınca aynı gün sıradaki oturuma geçebilirsin. **İlerleme** ekranında 15 oturumluk döngülerin en iyi deneme sonuçlarını görebilirsin.

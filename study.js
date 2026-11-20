@@ -109,7 +109,7 @@ function showBenchmarkSetup(track, daily = null) {
   studyElement('benchmarkTrack').value = track;
   studyElement('benchmarkTitle').textContent = fluent ? 'Süresiz akıcı yazım' : '3 dakikalık klavye denemesi';
   studyElement('benchmarkInstructions').textContent = fluent
-    ? 'Metnin tamamını kendi hızında yaz. Son kelimeden sonra Metni bitirdim düğmesine bas.'
+    ? 'Metin tamamlanınca tur biter.'
     : 'Metin açıldığında süre başlar. Küçük harf kullan, noktalama ekleme ve kelimeler arasında tek boşluk bırak. Sonucu tur bitince göreceksin.';
   studyElement('startBenchmark').textContent = daily && !fluent ? 'Denemeyi başlat' : 'Metni aç';
   updateBenchmarkSetup();
@@ -138,14 +138,15 @@ function revealTrial() {
   const passage = plannedBenchmark?.passage ?? selectTrialPassage(track, plannedBenchmark?.excluded);
   if (!passage) return;
   const fluent = plannedBenchmark?.kind === 'fluent';
+  const words = passage.content.split(' ');
   benchmark = { ...passage, track, daily: plannedBenchmark,
-    startedAt: fluent ? null : performance.now(), lastInput: '', typedCount: 0 };
+    startedAt: fluent ? null : performance.now(), lastInput: '', typedCount: 0,
+    lastTargetWord: words.at(-1) };
   rememberPassage(passage.id);
   studyElement('benchmarkSetup').hidden = true;
   studyElement('benchmarkRun').hidden = false;
   studyElement('benchmarkTextTitle').textContent = passage.title;
   const source = studyElement('benchmarkPassage');
-  const words = passage.content.split(' ');
   const fragment = document.createDocumentFragment();
   words.forEach((word, index) => {
     const span = document.createElement('span');
@@ -157,8 +158,6 @@ function revealTrial() {
   source.scrollTop = 0;
   studyElement('benchmarkTimer').hidden = fluent;
   studyElement('benchmarkTimer').textContent = '3:00';
-  studyElement('finishFluent').hidden = !fluent;
-  studyElement('finishFluent').disabled = true;
   const input = studyElement('benchmarkInput');
   input.value = '';
   input.focus();
@@ -179,8 +178,14 @@ function onBenchmarkInput(event) {
     return;
   }
   benchmark.lastInput = event.target.value;
-  if (benchmark.startedAt === null) studyElement('finishFluent').disabled = !benchmark.lastInput.trim();
   const typedCount = (benchmark.lastInput.trimStart().match(/\s+/g) || []).length;
+  if (benchmark.startedAt === null && !event.isComposing) {
+    const score = fluentCompletionScore(benchmark);
+    if (score) {
+      finishBenchmark(score);
+      return;
+    }
+  }
   if (typedCount > benchmark.typedCount) {
     const source = studyElement('benchmarkPassage');
     const upcoming = source.children[typedCount];
@@ -192,13 +197,22 @@ function onBenchmarkInput(event) {
   benchmark.typedCount = typedCount;
 }
 
-function finishBenchmark() {
+function fluentCompletionScore(run) {
+  const lastWord = run.lastInput.trimEnd().match(/\S+$/)?.[0];
+  const matchesLastWord = lastWord?.normalize('NFC').toLocaleLowerCase('tr-TR') === run.lastTargetWord;
+  if (!lastWord || (!matchesLastWord && !/\s$/.test(run.lastInput))) return null;
+
+  const score = scoreExamCopy(run.content, run.lastInput);
+  return score.reachedEnd ? score : null;
+}
+
+function finishBenchmark(completedScore = null) {
   if (!benchmark) return;
   clearInterval(benchmarkTimerId);
   benchmarkTimerId = null;
   const { id, title, track, content, lastInput, daily } = benchmark;
   benchmark = null;
-  const score = scoreExamCopy(content, lastInput);
+  const score = completedScore ?? scoreExamCopy(content, lastInput);
   const mistakes = score.mistakes.map(mistake => mistake.expected).filter(Boolean);
   if (daily?.kind === 'fluent') {
     if (lastInput.trim()) completeDailyStep(daily, mistakes);
@@ -264,9 +278,6 @@ function setupBenchmark() {
   const dialog = studyElement('benchmarkDialog');
   studyElement('openBenchmark').addEventListener('click', () => showBenchmarkSetup('zabit'));
   studyElement('startBenchmark').addEventListener('click', revealTrial);
-  studyElement('finishFluent').addEventListener('click', () => {
-    if (benchmark?.daily?.kind === 'fluent' && benchmark.lastInput.trim()) finishBenchmark();
-  });
   studyElement('benchmarkTrack').addEventListener('change', updateBenchmarkSetup);
   studyElement('benchmarkNext').addEventListener('click', () => {
     if (plannedBenchmark) {

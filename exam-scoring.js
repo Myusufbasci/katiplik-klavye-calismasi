@@ -61,6 +61,10 @@ function scoreExamCopy(source, input) {
   for (let end = 1; end <= target.length; end++) {
     if (cost[lastRow + end] < cost[lastRow + j]) j = end;
   }
+  const finalCell = lastRow + target.length;
+  const finalMerge = j === target.length - 1 && path[finalCell] % 8 === operations.merge &&
+    cost[finalCell] === cost[lastRow + j] && typed.at(-1) === target.at(-2) + target.at(-1);
+  const reachedEnd = finalMerge || (j === target.length && path[finalCell] % 8 !== operations.unfinished);
   let i = typed.length;
   let correct = 0;
   let skipped = 0;
@@ -103,6 +107,7 @@ function scoreExamCopy(source, input) {
     wrong,
     skipped,
     extraSpaces,
+    reachedEnd,
     accuracy: assessed ? correct / assessed : 0,
     errorRate: assessed ? wrong / assessed : 0,
     mistakes: mistakes.reverse()
