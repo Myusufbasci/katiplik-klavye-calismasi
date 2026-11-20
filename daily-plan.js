@@ -157,7 +157,8 @@ function prepareSavedSession(session) {
 }
 
 function isExtraCopy(step) {
-  return step.kind === 'copy' && step.label !== 'Isınma' && step.label !== 'Akıcı yazım';
+  return (step.kind === 'copy' && step.label !== 'Isınma') ||
+    (step.kind === 'fluent' && step.label !== 'Akıcı yazım');
 }
 
 function getSteps(session) {
@@ -167,7 +168,7 @@ function getSteps(session) {
     kind: 'words', label: 'Zor kelime alıştırması', seconds: 0,
     detail: 'Kelimeleri acele etmeden yaz. Doğru yazdığında sıradaki kelime gelir.'
   };
-  const copy = { kind: 'copy', label: 'Akıcı yazım', seconds: 0, detail: 'Metnin tamamını rahat bir ritimde yaz.' };
+  const copy = { kind: 'fluent', label: 'Akıcı yazım', seconds: 0, detail: 'Metni sınav ekranında süresiz yaz.' };
   const trial = { kind: 'trial', label: 'Klavye denemesi', seconds: 180, detail: 'Ayrı bir resmî metinde bugünkü hızını ölç.' };
   const review = { kind: 'review', label: 'Kısa değerlendirme', seconds: 0, detail: 'Bugünkü zor kelimeleri gözden geçir.' };
   if (session.rotationStep) {
@@ -264,15 +265,19 @@ function launchDailyStep() {
     showPlanView('today');
     return;
   }
+  const passage = passageFor(session);
+  if (step.kind === 'fluent') {
+    showBenchmarkSetup(session.track, { ...marker, passage });
+    return;
+  }
   if (step.kind === 'trial') {
     const previous = studyData.sessions.at(-2);
-    const text = session.rotationStep ? { passage: passageFor(session) }
+    const text = session.rotationStep ? { passage }
       : { excluded: [session.practiceId, previous?.practiceId, previous?.trialId] };
     showBenchmarkSetup(session.track, { ...marker, ...text });
     return;
   }
 
-  const passage = passageFor(session);
   const current = state.drill?.daily;
   showPlanView('drill');
   studyElement('practiceWorkspace').classList.toggle('word-review-practice', step.kind === 'words');

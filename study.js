@@ -99,6 +99,7 @@ function selectTrialPassage(track, excluded = []) {
 
 function showBenchmarkSetup(track, daily = null) {
   const dialog = studyElement('benchmarkDialog');
+  const fluent = daily?.kind === 'fluent';
   benchmark = null;
   plannedBenchmark = daily;
   studyElement('benchmarkSetup').hidden = false;
@@ -106,7 +107,11 @@ function showBenchmarkSetup(track, daily = null) {
   studyElement('benchmarkResult').hidden = true;
   studyElement('benchmarkManual').hidden = Boolean(daily);
   studyElement('benchmarkTrack').value = track;
-  studyElement('startBenchmark').textContent = daily ? 'Denemeyi başlat' : 'Metni aç';
+  studyElement('benchmarkTitle').textContent = fluent ? 'Süresiz akıcı yazım' : '3 dakikalık klavye denemesi';
+  studyElement('benchmarkInstructions').textContent = fluent
+    ? 'Metnin tamamını kendi hızında yaz. Son kelimeden sonra Metni bitirdim düğmesine bas.'
+    : 'Metin açıldığında süre başlar. Küçük harf kullan, noktalama ekleme ve kelimeler arasında tek boşluk bırak. Sonucu tur bitince göreceksin.';
+  studyElement('startBenchmark').textContent = daily && !fluent ? 'Denemeyi başlat' : 'Metni aç';
   updateBenchmarkSetup();
   if (!dialog.open) {
     pausedPractice = !daily && state.isStarted;
@@ -120,7 +125,7 @@ function updateBenchmarkSetup() {
   const pool = trialPool(track);
   studyElement('startBenchmark').disabled = !pool.length;
   studyElement('benchmarkSetupStatus').textContent = plannedBenchmark?.passage
-    ? `Günün sınav metni · ${plannedBenchmark.passage.title}`
+    ? plannedBenchmark.passage.title
     : plannedBenchmark
     ? 'Deneme için günün alıştırmasından farklı bir resmî metin açılacak.'
     : track === 'custom'
@@ -132,7 +137,9 @@ function revealTrial() {
   const track = studyElement('benchmarkTrack').value;
   const passage = plannedBenchmark?.passage ?? selectTrialPassage(track, plannedBenchmark?.excluded);
   if (!passage) return;
-  benchmark = { ...passage, track, daily: plannedBenchmark, startedAt: performance.now(), lastInput: '', typedCount: 0 };
+  const fluent = plannedBenchmark?.kind === 'fluent';
+  benchmark = { ...passage, track, daily: plannedBenchmark,
+    startedAt: fluent ? null : performance.now(), lastInput: '', typedCount: 0 };
   rememberPassage(passage.id);
   studyElement('benchmarkSetup').hidden = true;
   studyElement('benchmarkRun').hidden = false;
@@ -148,15 +155,18 @@ function revealTrial() {
   });
   source.replaceChildren(fragment);
   source.scrollTop = 0;
+  studyElement('benchmarkTimer').hidden = fluent;
   studyElement('benchmarkTimer').textContent = '3:00';
+  studyElement('finishFluent').hidden = !fluent;
+  studyElement('finishFluent').disabled = true;
   const input = studyElement('benchmarkInput');
   input.value = '';
   input.focus();
-  benchmarkTimerId = setInterval(updateBenchmarkClock, 100);
+  if (!fluent) benchmarkTimerId = setInterval(updateBenchmarkClock, 100);
 }
 
 function updateBenchmarkClock() {
-  if (!benchmark) return;
+  if (!benchmark || benchmark.startedAt === null) return;
   const remaining = Math.max(0, Math.ceil(trialSeconds - (performance.now() - benchmark.startedAt) / 1000));
   studyElement('benchmarkTimer').textContent = `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`;
   if (!remaining) finishBenchmark();
@@ -164,11 +174,12 @@ function updateBenchmarkClock() {
 
 function onBenchmarkInput(event) {
   if (!benchmark) return;
-  if (performance.now() - benchmark.startedAt >= trialSeconds * 1000) {
+  if (benchmark.startedAt !== null && performance.now() - benchmark.startedAt >= trialSeconds * 1000) {
     finishBenchmark();
     return;
   }
   benchmark.lastInput = event.target.value;
+  if (benchmark.startedAt === null) studyElement('finishFluent').disabled = !benchmark.lastInput.trim();
   const typedCount = (benchmark.lastInput.trimStart().match(/\s+/g) || []).length;
   if (typedCount > benchmark.typedCount) {
     const source = studyElement('benchmarkPassage');
@@ -184,11 +195,14 @@ function onBenchmarkInput(event) {
 function finishBenchmark() {
   if (!benchmark) return;
   clearInterval(benchmarkTimerId);
+  benchmarkTimerId = null;
   const { id, title, track, content, lastInput, daily } = benchmark;
   benchmark = null;
   const score = scoreExamCopy(content, lastInput);
   const mistakes = score.mistakes.map(mistake => mistake.expected).filter(Boolean);
-  if (lastInput.trim()) {
+  if (daily?.kind === 'fluent') {
+    if (lastInput.trim()) completeDailyStep(daily, mistakes);
+  } else if (lastInput.trim()) {
     const result = { id, title, track, at: Date.now(), net: score.net, accuracy: score.accuracy,
       skipped: score.skipped, errorRate: score.errorRate };
     if (daily && completeDailyStep(daily, mistakes, id)) result.cycle = cycleForSession(daily.number);
@@ -201,14 +215,18 @@ function finishBenchmark() {
 }
 
 function renderBenchmarkResult(score, daily) {
+  const fluent = daily?.kind === 'fluent';
   studyElement('benchmarkRun').hidden = true;
   studyElement('benchmarkResult').hidden = false;
+  studyElement('benchmarkResultTitle').textContent = fluent ? 'Akıcı yazım sonucu' : 'Deneme sonucu';
+  studyElement('benchmarkResultNote').hidden = fluent;
   const mistakes = score.mistakes.filter(mistake => mistake.expected).slice(0, 8);
   const scores = [
-    ['Net kelime', score.net], ['Doğru', score.correct], ['Hatalı', score.wrong],
+    ['Doğru', score.correct], ['Hatalı', score.wrong],
     ['Atlanan', score.skipped], ['Fazla boşluk', score.extraSpaces],
     ['Doğruluk', `%${studyNumber.format(score.accuracy * 100)}`]
   ];
+  if (!fluent) scores.unshift(['Net kelime', score.net]);
   const metrics = studyElement('benchmarkMetrics');
   metrics.replaceChildren(...scores.map(([label, value]) => {
     const pair = document.createElement('div');
@@ -219,14 +237,7 @@ function renderBenchmarkResult(score, daily) {
     pair.append(term, description);
     return pair;
   }));
-  const issues = [];
-  if (score.net < 90) issues.push('net 90 kelimenin altında');
-  if (score.errorRate > 0.25) issues.push('hata oranı %25’in üzerinde');
-  if (score.skipped >= 22) issues.push('22 veya daha fazla atlanan kelime');
-  const verdict = issues.length ? `2026 deneme eşiği: ${issues.join(', ')}.` : '2026 deneme eşiği karşılandı.';
-  const target = getCycleHistory().at(-1).target;
-  const goal = score.net >= target ? `Döngünün ${target} net hedefini karşıladın.` : `Döngü hedefine ${target - score.net} net kaldı.`;
-  studyElement('benchmarkStatus').textContent = `${verdict} ${goal}`;
+  studyElement('benchmarkStatus').textContent = fluent ? 'Akıcı yazım tamamlandı.' : trialStatus(score);
   studyElement('benchmarkNext').textContent = daily ? 'Bugüne dön' : 'Yeni metin seç';
   studyElement('benchmarkPractice').hidden = Boolean(daily);
   studyElement('benchmarkMistakes').hidden = !mistakes.length;
@@ -238,10 +249,24 @@ function renderBenchmarkResult(score, daily) {
   studyElement('benchmarkResultTitle').focus();
 }
 
+function trialStatus(score) {
+  const issues = [];
+  if (score.net < 90) issues.push('net 90 kelimenin altında');
+  if (score.errorRate > 0.25) issues.push('hata oranı %25’in üzerinde');
+  if (score.skipped >= 22) issues.push('22 veya daha fazla atlanan kelime');
+  const verdict = issues.length ? `2026 deneme eşiği: ${issues.join(', ')}.` : '2026 deneme eşiği karşılandı.';
+  const target = getCycleHistory().at(-1).target;
+  const goal = score.net >= target ? `Döngünün ${target} net hedefini karşıladın.` : `Döngü hedefine ${target - score.net} net kaldı.`;
+  return `${verdict} ${goal}`;
+}
+
 function setupBenchmark() {
   const dialog = studyElement('benchmarkDialog');
   studyElement('openBenchmark').addEventListener('click', () => showBenchmarkSetup('zabit'));
   studyElement('startBenchmark').addEventListener('click', revealTrial);
+  studyElement('finishFluent').addEventListener('click', () => {
+    if (benchmark?.daily?.kind === 'fluent' && benchmark.lastInput.trim()) finishBenchmark();
+  });
   studyElement('benchmarkTrack').addEventListener('change', updateBenchmarkSetup);
   studyElement('benchmarkNext').addEventListener('click', () => {
     if (plannedBenchmark) {
@@ -264,6 +289,7 @@ function setupBenchmark() {
   for (const event of ['paste', 'drop']) input.addEventListener(event, e => e.preventDefault());
   dialog.addEventListener('close', () => {
     clearInterval(benchmarkTimerId);
+    benchmarkTimerId = null;
     benchmark = null;
     plannedBenchmark = null;
     if (pausedPractice && !studyElement('practiceWorkspace').hidden) {

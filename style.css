@@ -933,6 +933,10 @@ textarea.form-control {
   resize: vertical;
 }
 
+#finishFluent {
+  margin-top: 12px;
+}
+
 .benchmark-metrics {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(94px, 1fr));
@@ -962,7 +966,8 @@ textarea.form-control {
   font-size: .875rem;
 }
 
-#startBenchmark:disabled {
+#startBenchmark:disabled,
+#finishFluent:disabled {
   opacity: .6;
   cursor: default;
 }

@@ -111,7 +111,7 @@
           <select id="durationSelect" class="clean-mode-select" title="Çalışma Modu">
             <option value="0" selected>Süresiz pratik</option>
             <option value="180">3 dk rehberli pratik</option>
-            <option value="120">2 dk akıcı yazım</option>
+            <option value="120">2 dk rehberli pratik</option>
             <option value="60">1 dk pratik</option>
             <option value="30">30 sn tempo turu</option>
           </select>
@@ -359,7 +359,7 @@
   <dialog id="benchmarkDialog" class="modal-content benchmark-dialog study-dialog" aria-labelledby="benchmarkTitle">
     <div class="modal-header">
       <h2 id="benchmarkTitle">3 dakikalık klavye denemesi</h2>
-      <form method="dialog"><button class="close-modal-btn" aria-label="Denemeyi kapat">✕</button></form>
+      <form method="dialog"><button class="close-modal-btn" aria-label="Kapat">✕</button></form>
     </div>
     <div class="modal-body study-body">
       <section id="benchmarkSetup">
@@ -371,7 +371,7 @@
           <option value="custom">Eklediğim metinler</option>
         </select>
         </div>
-        <p>Metin açıldığında süre başlar. Küçük harf kullan, noktalama ekleme ve kelimeler arasında tek boşluk bırak. Sonucu tur bitince göreceksin.</p>
+        <p id="benchmarkInstructions"></p>
         <p id="benchmarkSetupStatus" role="status"></p>
         <button id="startBenchmark" class="btn-primary" type="button">Metni aç</button>
       </section>
@@ -384,6 +384,7 @@
         <label for="benchmarkInput">Metni buraya yaz</label>
         <textarea id="benchmarkInput" class="form-control benchmark-input" autocomplete="off" autocorrect="off"
           autocapitalize="off" spellcheck="false" maxlength="12000"></textarea>
+        <button id="finishFluent" class="btn-primary" type="button" hidden disabled>Metni bitirdim</button>
       </section>
       <section id="benchmarkResult" hidden aria-labelledby="benchmarkResultTitle">
         <h3 id="benchmarkResultTitle" tabindex="-1">Deneme sonucu</h3>
@@ -393,7 +394,7 @@
           <h4>Tekrar edilecek kelimeler</h4>
           <ul id="benchmarkMistakeList"></ul>
         </div>
-        <p class="study-note">Puan, yayımlanan 2026 kriterlerine göre bu uygulamanın tahminidir. Birden fazla hatanın birleştiği durumlarda puanlama farklılık gösterebilir.</p>
+        <p id="benchmarkResultNote" class="study-note">Puan, yayımlanan 2026 kriterlerine göre bu uygulamanın tahminidir. Birden fazla hatanın birleştiği durumlarda puanlama farklılık gösterebilir.</p>
         <div class="study-actions">
           <button id="benchmarkNext" class="btn-secondary" type="button">Yeni metin seç</button>
           <button id="benchmarkPractice" class="btn-primary" type="button">Zor kelimeleri çalış</button>
